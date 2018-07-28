@@ -9,21 +9,10 @@ public:
     PathId_t path_in;
     std::set<PathId_t> pathes_out;
 
-    CWayPoint() 
-        :   path_in(s_invalid_path_id)
-    {
-    }
-    
-    ~CWayPoint()
-    {
-        assert( path_in == s_invalid_path_id );
-        assert( pathes_out.empty() );
-    }
+    CWayPoint();
+    ~CWayPoint();
 
-    WayPointId_t WayPointId() const
-    {
-        return ToWayPointId(this);
-    }
+    WayPointId_t WayPointId() const;
 };
 
 inline WayPointId_t ToWayPointId( const CWayPoint* wp )

@@ -37,7 +37,7 @@ public:
         assert( m_wps.count(wp_id) == 1 );
         CWayPoint* wp = ToWayPoint(wp_id);
         m_wps.erase(wp_id);
-        delete wp_id;
+        delete wp;
     }
 
     PathId_t AddPath( WayPointId_t begin_wp, WayPointId_t end_wp, Distance_t distance )
@@ -117,7 +117,7 @@ public:
         assert( m_vehs.count(veh_id) == 0 );
         CVehicle* veh = ToVehicle(veh_id);
         m_vehs.erase(veh_id);
-        delete veh_ctx;
+        delete veh;
     }
 
 
