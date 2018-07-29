@@ -73,12 +73,12 @@ public:
 private:
     struct SSegment
     {
-        DistanceId_t begin;
+        Distance_t begin;
         JunctionId_t junc;
         PathId_t junc_other_path;
         bool junc_hi_priority;
 
-        explicit SSegment( DistanceId_t begin_,
+        explicit SSegment( Distance_t begin_,
                             JunctionId_t junc_ = s_invalid_junc_id, PathId_t junc_other_path_ = s_invalid_path_id,
                             bool junc_hi_priority_ = true )
             :   begin(begin_),

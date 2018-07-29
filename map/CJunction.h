@@ -15,6 +15,7 @@ public:
         Time_t time;
         bool force;
 
+        SLock() {}
         explicit SLock( PathId_t sender_, Time_t time_, bool force_ = false )
             :   sender(sender_),
                 time(time_),
@@ -32,6 +33,7 @@ public:
         Time_t time;
         bool force;
 
+        SRequest() {}
         explicit SRequest( PathId_t sender_, Time_t time_, bool force_ = false )
             :   sender(sender_),
                 time(time_),

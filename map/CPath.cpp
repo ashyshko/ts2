@@ -2,6 +2,7 @@
 #include <map>
 #include <set>
 #include <CJunction.h>
+#include <CVehicle.h>
 
 CPath::SJunctionData::SJunctionData( JunctionId_t junc_, PathId_t other_path_, 
                                         Distance_t pos_begin_, Distance_t pos_end_, bool high_priority_ )
@@ -112,8 +113,8 @@ bool CPath::LockSegment( size_t segment_index, VehicleId_t veh, Time_t& min_time
     CJunction* junc = ToJunction(segment.junc);
     assert( junc->locks.count(veh) == 0 );
 
-    junc->locks[veh] = SLock( PathId(), s_time_max, false );
-    UpdateLock( veh, segment, min_time, max_time );
+    junc->locks[veh] = CJunction::SLock( PathId(), s_time_max, false );
+    UpdateLock( veh, segment_index, min_time, max_time );
     return true;
 }
 
@@ -123,21 +124,22 @@ void CPath::UpdateLock( VehicleId_t veh, size_t segment_index, Time_t& min_time,
     assert( segment_index < m_segments.size() );
     SSegment& segment = m_segments[segment_index];
 
-    if( segment.junc == s_invalid_junc_id 
+    if( segment.junc == s_invalid_junc_id )
     {
         return;
     }
 
     assert( segment.junc != s_invalid_junc_id );
     assert( segment.junc_hi_priority );
+    CJunction* junc = ToJunction(segment.junc);
     auto lock_it = junc->locks.find(veh);
     assert( lock_it != junc->locks.end() );
-    SLock& lock = lock_it->second;
+    CJunction::SLock& lock = lock_it->second;
     assert( lock.sender == PathId() );
     
     for( auto it = junc->requests.begin(); it != junc->requests.end(); )
     {
-        const SRequest& request = it->second;
+        const CJunction::SRequest& request = it->second;
         if( request.time < min_time || request.force )
         {
             ++it;
@@ -148,7 +150,7 @@ void CPath::UpdateLock( VehicleId_t veh, size_t segment_index, Time_t& min_time,
         it = junc->requests.erase(it);
     }
 
-    junc->UpdateNextRequest();
+    junc->UpdateNextRequestTime();
 
     if( junc->next_request_time <= max_time )
     {
@@ -161,10 +163,10 @@ void CPath::UpdateLock( VehicleId_t veh, size_t segment_index, Time_t& min_time,
 
     lock.time = min_time;
     lock.force = min_time >= max_time;
-    junc->UpdateNextLock();
+    junc->UpdateNextLockTime();
 }
 
-void CPath::UnlockSegment( size_t segment_index, VehicleId_t veh )
+void CPath::UnlockSegment( VehicleId_t veh, size_t segment_index )
 {
     assert( segment_index < m_segments.size() );
     SSegment& segment = m_segments[segment_index];
@@ -179,7 +181,7 @@ void CPath::UnlockSegment( size_t segment_index, VehicleId_t veh )
     CJunction* junc = ToJunction(segment.junc);
     assert( junc->locks.count(veh) == 0 );
     junc->locks.erase(veh);
-    junc->UpdateNextLock();
+    junc->UpdateNextLockTime();
 }
 
 bool CPath::RequestMoveThrough( size_t segment_index, VehicleId_t veh, Time_t before_time, bool force )
@@ -191,11 +193,11 @@ bool CPath::RequestMoveThrough( size_t segment_index, VehicleId_t veh, Time_t be
     CJunction* junc = ToJunction(segment.junc);
     assert( junc->requests.count(veh) == 0 );
 
-    junc->requests[veh] = SRequest( PathId(), s_time_min, false );
-    return Update( veh, segment_index, before_time, force );
+    junc->requests[veh] = CJunction::SRequest( PathId(), s_time_min, false );
+    return UpdateMoveThrough( veh, segment_index, before_time, force );
 }
 
-void CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, Time_t before_time, bool force )
+bool CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, Time_t before_time, bool force )
 {
     assert( segment_index < m_segments.size() );
     SSegment& segment = m_segments[segment_index];
@@ -204,20 +206,20 @@ void CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, Time_t bef
     CJunction* junc = ToJunction(segment.junc);
     auto request_it = junc->requests.find(veh);
     assert( request_it != junc->requests.end() );
-    SRequest& request = request_it->second;
+    CJunction::SRequest& request = request_it->second;
     
     if( before_time > junc->next_lock_time )
     {
         if( !force )
         {
             junc->requests.erase(request_it);
-            junc->UpdateNextRequest();
+            junc->UpdateNextRequestTime();
             return false;
         }
 
         for( auto it = junc->locks.begin(); it != junc->locks.end(); )
         {
-            const SLock& lock = it->second;
+            const CJunction::SLock& lock = it->second;
             if( lock.time >= before_time || lock.force )
             {
                 ++it;
@@ -228,12 +230,12 @@ void CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, Time_t bef
             it = junc->locks.erase(it);
         }
 
-        junc->UpdateNextLock();
+        junc->UpdateNextLockTime();
     }
 
-    request.before_time = before_time;
+    request.time = before_time;
     request.force = force;
-    junc->UpdateNextRequest();
+    junc->UpdateNextRequestTime();
     return true;
 }
 
@@ -247,7 +249,7 @@ void CPath::CancelMoveThrough( VehicleId_t veh, size_t segment_index )
     CJunction* junc = ToJunction(segment.junc);
     assert( junc->requests.count(veh) == 1 );
     junc->requests.erase(veh);
-    junc->UpdateNextLock();
+    junc->UpdateNextLockTime();
 }
 
 void CPath::LockWasCanceled( JunctionId_t junc, VehicleId_t veh )
