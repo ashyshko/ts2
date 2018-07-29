@@ -4,6 +4,8 @@ WayPointId_t s_invalid_wp_id = WayPointId_t(0);
 PathId_t s_invalid_path_id = PathId_t(0);
 JunctionId_t s_invalid_junc_id = JunctionId_t(0);
 VehicleId_t s_invalid_veh_id = VehicleId_t(0);
+Time_t s_time_max = std::numeric_limits<Time_t>::max();
+Time_t s_time_min = std::numeric_limits<Time_t>::min();
 
 SVehicleDimension VehicleDimensionOf( int width, int length, int front_wheel_offset, int rear_wheel_offset,
                                         bool has_trailer, int trail_joint_point, int trail_width, int trail_offset,

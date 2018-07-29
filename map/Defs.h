@@ -19,6 +19,9 @@ extern PathId_t s_invalid_path_id;
 extern JunctionId_t s_invalid_junc_id;
 extern VehicleId_t s_invalid_veh_id;
 
+extern Time_t s_time_max;
+extern Time_t s_time_min;
+
 inline int TicksPerSecond()
 {
     return 60;

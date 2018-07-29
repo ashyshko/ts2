@@ -34,6 +34,9 @@ public:
     
     void GetMinimalRoute( std::vector<PathId_t>& min_route ) const;
     void ReplaceRoute( std::vector<PathId_t>&& new_route );
+    
+    void LockWasCanceled( PathId_t path, size_t segment_index );
+    void MoveThroughWasCanceled( PathId_t path, size_t segment_index );
 };
 
 inline VehicleId_t ToVehicleId( const CVehicle* veh )

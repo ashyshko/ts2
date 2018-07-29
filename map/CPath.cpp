@@ -1,6 +1,7 @@
 #include <CPath.h>
 #include <map>
 #include <set>
+#include <CJunction.h>
 
 CPath::SJunctionData::SJunctionData( JunctionId_t junc_, PathId_t other_path_, 
                                         Distance_t pos_begin_, Distance_t pos_end_, bool high_priority_ )
@@ -63,6 +64,218 @@ void CPath::RemoveJunctionData( JunctionId_t junc )
         [junc]( const SJunctionData& v ) { return v.junc == junc; } );
     assert( erase_it != juncs.end() );
     juncs.erase(erase_it);
+}
+
+size_t CPath::SegmentCount() const
+{
+    return m_segments.size();
+}
+
+Distance_t CPath::SegmentStart( size_t index ) const
+{
+    assert( index < m_segments.size() );
+    return m_segments[index].begin;
+
+}
+
+size_t CPath::PosToSegmentIndex( Distance_t distance ) const
+{
+    assert( distance >= 0 && distance < this->distance );
+
+    for( size_t i = 1; i < m_segments.size(); ++i )
+    {
+        if( m_segments[i].begin > distance )
+        {
+            return i - 1;
+        }
+    }
+
+    return m_segments.size() - 1;
+}
+
+bool CPath::LockSegment( size_t segment_index, VehicleId_t veh, Time_t& min_time, Time_t max_time )
+{
+    assert( max_time <= min_time );
+    assert( segment_index < m_segments.size() );
+    SSegment& segment = m_segments[segment_index];
+
+    if( segment.junc == s_invalid_junc_id )
+    {
+        return true;
+    }
+
+    if( !segment.junc_hi_priority )
+    {
+        return false;
+    }
+
+    CJunction* junc = ToJunction(segment.junc);
+    assert( junc->locks.count(veh) == 0 );
+
+    junc->locks[veh] = SLock( PathId(), s_time_max, false );
+    UpdateLock( veh, segment, min_time, max_time );
+    return true;
+}
+
+void CPath::UpdateLock( VehicleId_t veh, size_t segment_index, Time_t& min_time, Time_t max_time )
+{
+    assert( max_time <= min_time );
+    assert( segment_index < m_segments.size() );
+    SSegment& segment = m_segments[segment_index];
+
+    if( segment.junc == s_invalid_junc_id 
+    {
+        return;
+    }
+
+    assert( segment.junc != s_invalid_junc_id );
+    assert( segment.junc_hi_priority );
+    auto lock_it = junc->locks.find(veh);
+    assert( lock_it != junc->locks.end() );
+    SLock& lock = lock_it->second;
+    assert( lock.sender == PathId() );
+    
+    for( auto it = junc->requests.begin(); it != junc->requests.end(); )
+    {
+        const SRequest& request = it->second;
+        if( request.time < min_time || request.force )
+        {
+            ++it;
+            continue;
+        }
+        
+        ToPath( request.sender )->MoveThroughWasCanceled( segment.junc, it->first );
+        it = junc->requests.erase(it);
+    }
+
+    junc->UpdateNextRequest();
+
+    if( junc->next_request_time <= max_time )
+    {
+        min_time = std::max( min_time, junc->next_request_time );
+    }
+    else
+    {
+        min_time = max_time;
+    }
+
+    lock.time = min_time;
+    lock.force = min_time >= max_time;
+    junc->UpdateNextLock();
+}
+
+void CPath::UnlockSegment( size_t segment_index, VehicleId_t veh )
+{
+    assert( segment_index < m_segments.size() );
+    SSegment& segment = m_segments[segment_index];
+
+    if( segment.junc == s_invalid_junc_id )
+    {
+        return;
+    }
+
+    assert( !segment.junc_hi_priority );
+
+    CJunction* junc = ToJunction(segment.junc);
+    assert( junc->locks.count(veh) == 0 );
+    junc->locks.erase(veh);
+    junc->UpdateNextLock();
+}
+
+bool CPath::RequestMoveThrough( size_t segment_index, VehicleId_t veh, Time_t before_time, bool force )
+{
+    assert( segment_index < m_segments.size() );
+    SSegment& segment = m_segments[segment_index];
+    assert( segment.junc != s_invalid_junc_id );
+    assert( !segment.junc_hi_priority );
+    CJunction* junc = ToJunction(segment.junc);
+    assert( junc->requests.count(veh) == 0 );
+
+    junc->requests[veh] = SRequest( PathId(), s_time_min, false );
+    return Update( veh, segment_index, before_time, force );
+}
+
+void CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, Time_t before_time, bool force )
+{
+    assert( segment_index < m_segments.size() );
+    SSegment& segment = m_segments[segment_index];
+    assert( segment.junc != s_invalid_junc_id );
+    assert( !segment.junc_hi_priority );
+    CJunction* junc = ToJunction(segment.junc);
+    auto request_it = junc->requests.find(veh);
+    assert( request_it != junc->requests.end() );
+    SRequest& request = request_it->second;
+    
+    if( before_time > junc->next_lock_time )
+    {
+        if( !force )
+        {
+            junc->requests.erase(request_it);
+            junc->UpdateNextRequest();
+            return false;
+        }
+
+        for( auto it = junc->locks.begin(); it != junc->locks.end(); )
+        {
+            const SLock& lock = it->second;
+            if( lock.time >= before_time || lock.force )
+            {
+                ++it;
+                continue;
+            }
+
+            ToPath( lock.sender )->LockWasCanceled( segment.junc, it->first );
+            it = junc->locks.erase(it);
+        }
+
+        junc->UpdateNextLock();
+    }
+
+    request.before_time = before_time;
+    request.force = force;
+    junc->UpdateNextRequest();
+    return true;
+}
+
+void CPath::CancelMoveThrough( VehicleId_t veh, size_t segment_index )
+{
+    assert( segment_index < m_segments.size() );
+    SSegment& segment = m_segments[segment_index];
+    assert( segment.junc != s_invalid_junc_id );
+    assert( !segment.junc_hi_priority );
+
+    CJunction* junc = ToJunction(segment.junc);
+    assert( junc->requests.count(veh) == 1 );
+    junc->requests.erase(veh);
+    junc->UpdateNextLock();
+}
+
+void CPath::LockWasCanceled( JunctionId_t junc, VehicleId_t veh )
+{
+    assert( junc != s_invalid_junc_id );
+    size_t segment_index = JunctionIdToSegmentIndex(junc);
+    ToVehicle(veh)->LockWasCanceled( PathId(), segment_index );
+}
+
+void CPath::MoveThroughWasCanceled( JunctionId_t junc, VehicleId_t veh )
+{
+    assert( junc != s_invalid_junc_id );
+    size_t segment_index = JunctionIdToSegmentIndex(junc);
+    ToVehicle(veh)->MoveThroughWasCanceled( PathId(), segment_index );
+}
+
+size_t CPath::JunctionIdToSegmentIndex( JunctionId_t junc ) const
+{
+    for( size_t i = 0; i < m_segments.size(); ++i )
+    {
+        if( m_segments[i].junc == junc )
+        {
+            return i;
+        }
+    }
+
+    assert(0);
+    return m_segments.size();
 }
 
 bool CalculateRoute( WayPointId_t start_wp, WayPointId_t end_wp, std::vector<PathId_t>& pathes )

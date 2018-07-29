@@ -9,6 +9,40 @@ public:
     PathId_t hi_path;
     PathId_t lo_path;
 
+    struct SLock
+    {
+        PathId_t sender;
+        Time_t time;
+        bool force;
+
+        explicit SLock( PathId_t sender_, Time_t time_, bool force_ = false )
+            :   sender(sender_),
+                time(time_),
+                force(force_)
+        {
+        }
+    };
+
+    Time_t next_lock_time;
+    std::map<VehicleId_t, SLock> locks;
+
+    struct SRequest
+    {
+        PathId_t sender;
+        Time_t time;
+        bool force;
+
+        explicit SRequest( PathId_t sender_, Time_t time_, bool force_ = false )
+            :   sender(sender_),
+                time(time_),
+                force(force_)
+        {
+        }
+    };
+
+    Time_t next_request_time;
+    std::map<VehicleId_t, SRequest> requests;
+
     explicit CJunction( PathId_t hi_path_, Distance_t hi_path_begin, Distance_t hi_path_end,
                         PathId_t lo_path_, Distance_t lo_path_begin, Distance_t lo_path_end );
     ~CJunction();
@@ -17,6 +51,9 @@ public:
 
     CPath* HiPath() const;
     CPath* LoPath() const;
+
+    void UpdateNextLockTime();
+    void UpdateNextRequestTime();
 };
 
 inline JunctionId_t ToJunctionId( const CJunction* junction )

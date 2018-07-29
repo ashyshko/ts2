@@ -52,3 +52,13 @@ void CVehicle::ReplaceRoute( std::vector<PathId_t>&& new_route )
 {
     route.swap(new_route);
 }
+
+void CVehicle::LockWasCanceled( PathId_t path, size_t segment_index )
+{
+
+}
+
+void CVehicle::MoveThroughWasCanceled( PathId_t path, size_t segment_index )
+{
+    
+}
