@@ -3,7 +3,8 @@
 #include <algorithm>
 #include <assert.h>
 
-typedef int Time_t; // one unit -> 16ms (60fps)
+typedef int Time_t; // one unit -> 16ms (60 ticks per second)
+typedef long long HRTime_t; // one unit - 16us (60000 ticks per second)
 typedef int Point_t; // one unit - 1 mm
 typedef int Distance_t; // one unit - 1 um
 typedef int Speed_t; // one unit - um per tick (16ms)
@@ -21,6 +22,8 @@ extern VehicleId_t s_invalid_veh_id;
 
 extern Time_t s_time_max;
 extern Time_t s_time_min;
+extern HRTime_t s_hr_time_max;
+extern HRTime_t s_hr_time_min;
 
 inline int TicksPerSecond()
 {

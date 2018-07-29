@@ -94,7 +94,7 @@ size_t CPath::PosToSegmentIndex( Distance_t distance ) const
     return m_segments.size() - 1;
 }
 
-bool CPath::LockSegment( size_t segment_index, VehicleId_t veh, Time_t& min_time, Time_t max_time )
+bool CPath::LockSegment( size_t segment_index, VehicleId_t veh, HRTime_t& min_time, HRTime_t max_time )
 {
     assert( max_time <= min_time );
     assert( segment_index < m_segments.size() );
@@ -113,12 +113,12 @@ bool CPath::LockSegment( size_t segment_index, VehicleId_t veh, Time_t& min_time
     CJunction* junc = ToJunction(segment.junc);
     assert( junc->locks.count(veh) == 0 );
 
-    junc->locks[veh] = CJunction::SLock( PathId(), s_time_max, false );
+    junc->locks[veh] = CJunction::SLock( PathId(), s_hr_time_max, false );
     UpdateLock( veh, segment_index, min_time, max_time );
     return true;
 }
 
-void CPath::UpdateLock( VehicleId_t veh, size_t segment_index, Time_t& min_time, Time_t max_time )
+void CPath::UpdateLock( VehicleId_t veh, size_t segment_index, HRTime_t& min_time, HRTime_t max_time )
 {
     assert( max_time <= min_time );
     assert( segment_index < m_segments.size() );
@@ -184,7 +184,7 @@ void CPath::UnlockSegment( VehicleId_t veh, size_t segment_index )
     junc->UpdateNextLockTime();
 }
 
-bool CPath::RequestMoveThrough( size_t segment_index, VehicleId_t veh, Time_t before_time, bool force )
+bool CPath::RequestMoveThrough( size_t segment_index, VehicleId_t veh, HRTime_t before_time, bool force )
 {
     assert( segment_index < m_segments.size() );
     SSegment& segment = m_segments[segment_index];
@@ -193,11 +193,11 @@ bool CPath::RequestMoveThrough( size_t segment_index, VehicleId_t veh, Time_t be
     CJunction* junc = ToJunction(segment.junc);
     assert( junc->requests.count(veh) == 0 );
 
-    junc->requests[veh] = CJunction::SRequest( PathId(), s_time_min, false );
+    junc->requests[veh] = CJunction::SRequest( PathId(), s_hr_time_min, false );
     return UpdateMoveThrough( veh, segment_index, before_time, force );
 }
 
-bool CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, Time_t before_time, bool force )
+bool CPath::UpdateMoveThrough( VehicleId_t veh, size_t segment_index, HRTime_t before_time, bool force )
 {
     assert( segment_index < m_segments.size() );
     SSegment& segment = m_segments[segment_index];

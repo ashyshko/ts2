@@ -12,11 +12,11 @@ public:
     struct SLock
     {
         PathId_t sender;
-        Time_t time;
+        HRTime_t time;
         bool force;
 
         SLock() {}
-        explicit SLock( PathId_t sender_, Time_t time_, bool force_ = false )
+        explicit SLock( PathId_t sender_, HRTime_t time_, bool force_ = false )
             :   sender(sender_),
                 time(time_),
                 force(force_)
@@ -24,17 +24,17 @@ public:
         }
     };
 
-    Time_t next_lock_time;
+    HRTime_t next_lock_time;
     std::map<VehicleId_t, SLock> locks;
 
     struct SRequest
     {
         PathId_t sender;
-        Time_t time;
+        HRTime_t time;
         bool force;
 
         SRequest() {}
-        explicit SRequest( PathId_t sender_, Time_t time_, bool force_ = false )
+        explicit SRequest( PathId_t sender_, HRTime_t time_, bool force_ = false )
             :   sender(sender_),
                 time(time_),
                 force(force_)
@@ -42,7 +42,7 @@ public:
         }
     };
 
-    Time_t next_request_time;
+    HRTime_t next_request_time;
     std::map<VehicleId_t, SRequest> requests;
 
     explicit CJunction( PathId_t hi_path_, Distance_t hi_path_begin, Distance_t hi_path_end,
