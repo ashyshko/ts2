@@ -8,24 +8,38 @@ class CVehicle
 public:
     EVehicleClass veh_class;
     SVehicleDimension dim;
+    std::vector<Distance_t> tracking_points;
     Distance_t total_length;
 
-    struct SPathSegment
+    std::vector<PathId_t> route;
+    
+    struct SPosition
     {
         PathId_t path;
-        Distance_t pos_in, pos_out;
-        Speed_t speed_in, speed_out;
-        Acceleration_t accel;
-        JunctionId_t junc;
-
-        explicit SPathSegment( PathId_t path_, Distance_t pos_in_, Distance_t pos_out_, 
-                                Speed_t speed_in_, Speed_t speed_out_, Acceleration_t accel_, JunctionId_t junc_ = s_invalid_junc_id );
+        Distance_t pos;
     };
 
-    std::vector<PathId_t> route;
-    std::vector<SPathSegment> path_segments;
-    size_t path_segments_indexes[2]; // 0 for main unit, 1 for trailer
-    Distance_t path_segment_progress[2]; // 0 for main unit, 1 for trailer
+    std::vector<SPosition> pos;
+    Speed_t speed;
+    Acceleration_t accel;
+
+    enum ESegmentState
+    {
+        SegmentState_None,
+        SegmentState_Locked,
+        SegmentState_MoveThrough,
+        SegmentStateCount
+    };
+
+    struct SSegmentData
+    {
+        PathId_t path;
+        size_t segment_index;
+        ESegmentState state;
+        HRTime_t time;
+
+
+    };
 
     explicit CVehicle( EVehicleClass veh_class_, PathId_t path, Distance_t path_pos );
     ~CVehicle();

@@ -1,13 +1,12 @@
 #include <CWayPoint.h>
 
-CWayPoint::CWayPoint() 
-    :   path_in(s_invalid_path_id)
+CWayPoint::CWayPoint()
 {
 }
 
 CWayPoint::~CWayPoint()
 {
-    assert( path_in == s_invalid_path_id );
+    assert( pathes_in.empty() );
     assert( pathes_out.empty() );
 }
 

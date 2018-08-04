@@ -27,7 +27,7 @@ extern HRTime_t s_hr_time_min;
 
 inline int TicksPerSecond()
 {
-    return 60;
+    return 2;
 }
 
 inline Distance_t DistanceFromMm( int mm )

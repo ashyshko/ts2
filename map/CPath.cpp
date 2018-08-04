@@ -4,6 +4,8 @@
 #include <CJunction.h>
 #include <CVehicle.h>
 
+LockId_t s_invalid_lock_id = (LockId_t)0;
+
 CPath::SJunctionData::SJunctionData( JunctionId_t junc_, PathId_t other_path_, 
                                         Distance_t pos_begin_, Distance_t pos_end_, bool high_priority_ )
     :   junc(junc_),
@@ -20,17 +22,17 @@ CPath::CPath( WayPointId_t begin_wp_, WayPointId_t end_wp_, Distance_t distance_
         end_wp(end_wp_),
         distance(distance_)
 {
-    assert( EndWayPoint()->path_in == s_invalid_path_id );
+    assert( EndWayPoint()->pathes_in.count( PathId() ) == 0 );
     assert( BeginWayPoint()->pathes_out.count( PathId() ) == 0 );
-    EndWayPoint()->path_in = PathId();
+    EndWayPoint()->pathes_in.insert( PathId() );
     BeginWayPoint()->pathes_out.insert( PathId() );
 }
 
 CPath::~CPath()
 {
-    assert( EndWayPoint()->path_in == PathId() );
+    assert( EndWayPoint()->pathes_in.count( PathId() ) == 1 );
     assert( BeginWayPoint()->pathes_out.count( PathId() == 1 ) );
-    EndWayPoint()->path_in = s_invalid_path_id;
+    EndWayPoint()->pathes_in.erase( PathId() );
     BeginWayPoint()->pathes_out.erase( PathId() );
 
     assert( juncs.empty() );

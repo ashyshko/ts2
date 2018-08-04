@@ -5,6 +5,9 @@
 #include <Defs.h>
 #include <CWayPoint.h>
 
+typedef intptr_t LockId_t;
+extern LockId_t s_invalid_lock_id;
+
 class CPath
 {
 public:
@@ -45,27 +48,15 @@ public:
     
     // reserve segment for possible route
     // min_time - lower time when veh would be able to reach segment with full accel
-    // max_time - lower time when veh would be able to reach segment with full deccel 
-    //            (possible s_hr_time_max if veh is able to full stop before this segment)
-    // returns true if lock is possible (i.e. this segment is not reserved for other veh on path with higher priority )
-    //              and modifies min_time in range [min_time, max_time] if this segment was already requested (see RequestMoveThrough)
-    // returns false if lock is not possible
-    bool LockSegment( size_t segment_index, VehicleId_t veh, HRTime_t& min_time, HRTime_t max_time );
+    LockId_t LockSegment( size_t segment_index, VehicleId_t veh, HRTime_t min_time );
 
-    void UpdateLock( VehicleId_t veh, size_t segment_index, HRHRTime_t& min_time, HRTime_t max_time );
+    void UpdateLock( LockId_t lock, HRTime_t min_time );
 
-    void UnlockSegment( VehicleId_t veh, size_t segment_index );
+    void UnlockSegment( LockId_t lock );
 
-    // if LockSegment returns false, veh may request fast getting through that segment
-    // before_time - minimal time when vehicle is able to leave this segment
-    // force - if vehicle can't stop before that start of segment_index
-    // returns true if fast getting through is available
-    bool RequestMoveThrough( size_t segment_index, VehicleId_t veh, HRTime_t before_time, bool force );
+    bool IsStopAvailable( size_t segment_index ) const;
+    bool IsOutrunAvailable( size_t segment_index, HRTime_t leave_before_time ) const;
 
-    // MoveThrough request is automatically canceled if UpdateMoveThrough returns false
-    bool UpdateMoveThrough( VehicleId_t veh, size_t segment_index, HRTime_t before_time, bool force );
-
-    void CancelMoveThrough( VehicleId_t veh, size_t segment_index );
 
     void LockWasCanceled( JunctionId_t junc, VehicleId_t veh );
     void MoveThroughWasCanceled( JunctionId_t junc, VehicleId_t veh );

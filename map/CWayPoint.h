@@ -6,7 +6,7 @@
 class CWayPoint
 {
 public:
-    PathId_t path_in;
+    std::set<PathId_t> pathes_in;
     std::set<PathId_t> pathes_out;
 
     CWayPoint();
