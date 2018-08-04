@@ -27,7 +27,7 @@ CPath::~CPath()
     BeginWayPoint()->pathes_out.erase( PathId() );
 
     assert( m_segments.size() == 1 );
-    assert( m_segments[0].junc == s_invalid_junc_id );
+    assert( m_segments[0].juncs.empty() );
 }
 
 PathId_t CPath::PathId() const
@@ -209,14 +209,18 @@ void CPath::UpdateSegmentLock( size_t segment_index )
     assert( segment_index < m_segments.size() );
     SSegment& segment = m_segments[segment_index];
 
-    if( segment.junc == s_invalid_junc_id )
+    if( segment.juncs.empty() )
     {
         return;
     }
 
     if( segment.locks.empty() )
     {
-        ToJunction(segment.junc)->Unlock( PathId() );
+        for( JunctionId_t junc : segment.juncs )
+        {
+            ToJunction(junc)->Unlock( PathId() );
+        }
+
         return;
     }
 
@@ -226,7 +230,10 @@ void CPath::UpdateSegmentLock( size_t segment_index )
         min_time = std::min( min_time, ((SLock*)lock)->min_time );
     }
 
-    ToJunction(segment.junc)->Lock( PathId(), min_time );
+    for( JunctionId_t junc : segment.juncs )
+    {
+        ToJunction( junc )->Lock( PathId(), min_time );
+    }
 }
 
 size_t CPath::PositionToSegmentIndex( Distance_t pos ) const

@@ -16,8 +16,6 @@ public:
 
     Distance_t distance;
 
-    std::vector<SJunctionData> juncs;
-
     CPath( WayPointId_t begin_wp_, WayPointId_t end_wp_, Distance_t distance_ );
 
     ~CPath();
