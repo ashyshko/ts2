@@ -10,15 +10,15 @@
 #include <CJunction.h>
 #include <CVehicle.h>
 
-class CMap
+class CHub
 {
 public:
-    explicit CMap()
+    explicit CHub()
     {
 
     }
 
-    ~CMap()
+    ~CHub()
     {
 
     }
