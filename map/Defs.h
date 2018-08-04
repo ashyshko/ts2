@@ -35,7 +35,7 @@ inline int HRTicksPerSecond()
     return 2048;
 }
 
-inline HRTicksPerTick()
+inline int HRTicksPerTick()
 {
     return 1024;
 }

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 #include <Defs.h>
 #include <CWayPoint.h>
 
@@ -19,7 +20,7 @@ public:
     typedef std::list<std::pair<Distance_t, VehicleId_t>> CVehicleList;
     CVehicleList vehicles;
 
-    CVehicleList::iterator RegisterVehicle( VehicleId_t veh, DistanceId_t pos )
+    CVehicleList::iterator RegisterVehicle( VehicleId_t veh, Distance_t pos )
     {
         assert( pos >= 0 && pos < distance );
         CVehicleList::iterator it;
@@ -34,7 +35,7 @@ public:
         return vehicles.insert( it, CVehicleList::value_type( pos, veh ) );
     }
 
-    void MoveVehicle( CVehicleList::iterator veh_it, DistanceId_t new_pos )
+    void MoveVehicle( CVehicleList::iterator veh_it, Distance_t new_pos )
     {
         veh_it->first = new_pos;
 
@@ -64,7 +65,7 @@ public:
     VehicleId_t GetVehicleAhead( CVehicleList::const_iterator veh_it ) const
     {
         auto next_it = std::next(veh_it);
-        return ( next_it == vehicles.end() ) ? s_invalid_veh_id : next->second;
+        return ( next_it == vehicles.end() ) ? s_invalid_veh_id : next_it->second;
     }
 
     VehicleId_t GetLastVehicle() const

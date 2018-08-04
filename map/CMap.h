@@ -81,7 +81,7 @@ public:
     VehicleId_t AddVehicle( EVehicleClass veh_class, PathId_t path, Distance_t path_pos )
     {
         assert( m_pathes.count(path) == 1 );
-        CVehicle* veh = new CVehicle( veh_class, path, path_pos );
+        CVehicle* veh = new CVehicle( veh_class, path, path_pos, std::vector<Distance_t>(), s_vehicle_dimensions[veh_class].length );
         VehicleId_t veh_id = veh->VehicleId();
         assert( m_vehs.count(veh_id) == 0 );
         m_vehs.insert(veh_id);

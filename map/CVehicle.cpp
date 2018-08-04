@@ -16,7 +16,7 @@ CVehicle::CVehicle( EVehicleClass veh_class_, PathId_t path, Distance_t path_pos
 
     assert( path_pos < ToPath(path)->distance );
     assert( length <= path_pos );
-    current_location.push_back( SLocation( path, ToPath(path)->RegisterVehicle( ToVehicleId(), path_pos ) ) );
+    current_location.push_back( SLocation( path, ToPath(path)->RegisterVehicle( VehicleId(), path_pos ) ) );
 
     assert( tracking_points.size() == pos.size() );
     for( size_t i = 0; i < tracking_points.size(); ++i )
@@ -29,7 +29,7 @@ CVehicle::~CVehicle()
 {
     while( !current_location.empty() )
     {
-        ToPath( current_location.front() )->RemoveVehicle( ToVehicleId() );
+        ToPath( current_location.front().path )->RemoveVehicle( current_location.front().it );
         current_location.pop_front();
     }
 
@@ -62,7 +62,7 @@ PathId_t CVehicle::GetCurrentPath() const
 void CVehicle::ReplaceRoute( std::vector<PathId_t>&& new_route )
 {
     route.swap(new_route);
-    assert( ToPath( route.front() )->from_wp == ToPath( GetCurrentPath() )->to_wp );
+    assert( ToPath( route.front() )->begin_wp == ToPath( GetCurrentPath() )->end_wp );
 }
 
 void CVehicle::Move( Distance_t distance )
@@ -90,10 +90,10 @@ void CVehicle::Move( Distance_t distance )
                 break;
             }
 
-            route.pop_front();
+            route.erase( route.begin() );
 
             CPath* new_path = ToPath( route.front() );
-            current_location.push_front( SLocation( ToPathId(new_path), new_path->RegisterVehicle( ToVehicleId(), 0 ) ) );
+            current_location.push_front( SLocation( ToPathId(new_path), new_path->RegisterVehicle( VehicleId(), 0 ) ) );
         }
     }
 

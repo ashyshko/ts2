@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <Defs.h>
+#include <CPath.h>
 
 class CVehicle
 {
