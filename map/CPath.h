@@ -16,6 +16,67 @@ public:
 
     Distance_t distance;
 
+    typedef std::list<std::pair<Distance_t, VehicleId_t>> CVehicleList;
+    CVehicleList vehicles;
+
+    CVehicleList::iterator RegisterVehicle( VehicleId_t veh, DistanceId_t pos )
+    {
+        assert( pos >= 0 && pos < distance );
+        CVehicleList::iterator it;
+        for( auto it = vehicles.begin(); it != vehicles.end(); ++it )
+        {
+            if( pos < it->first )
+            {
+                break;
+            }
+        }
+
+        return vehicles.insert( it, CVehicleList::value_type( pos, veh ) );
+    }
+
+    void MoveVehicle( CVehicleList::iterator veh_it, DistanceId_t new_pos )
+    {
+        veh_it->first = new_pos;
+
+        while( veh_it != vehicles.begin() )
+        {
+            auto prev_it = std::prev(veh_it);
+            if( veh_it->first > prev_it->first )
+            {
+                break;
+            }
+
+            vehicles.splice( prev_it, vehicles, veh_it );
+        }
+
+        while(true)
+        {
+            auto next_it = std::next(veh_it);
+            if( next_it == vehicles.end() || next_it->first > veh_it->first )
+            {
+                break;
+            }
+
+            vehicles.splice( next_it, vehicles, veh_it );
+        }
+    }
+
+    VehicleId_t GetVehicleAhead( CVehicleList::const_iterator veh_it ) const
+    {
+        auto next_it = std::next(veh_it);
+        return ( next_it == vehicles.end() ) ? s_invalid_veh_id : next->second;
+    }
+
+    VehicleId_t GetLastVehicle() const
+    {
+        return vehicles.empty() ? s_invalid_veh_id : vehicles.front().second;
+    }
+
+    void RemoveVehicle( CVehicleList::iterator veh_it )
+    {
+        vehicles.erase(veh_it);
+    }
+
     CPath( WayPointId_t begin_wp_, WayPointId_t end_wp_, Distance_t distance_ );
 
     ~CPath();

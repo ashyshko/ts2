@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <assert.h>
 
-typedef int Time_t; // one unit -> 16ms (60 ticks per second)
-typedef long long HRTime_t; // one unit - 16us (60000 ticks per second)
+typedef int Time_t; // one unit -> 0.5s (2 ticks per second)
+typedef long long HRTime_t; // one unit - ~0.5ms (2048 ticks per second)
 typedef int Point_t; // one unit - 1 mm
 typedef int Distance_t; // one unit - 1 um
-typedef int Speed_t; // one unit - um per tick (16ms)
-typedef int Acceleration_t; // one unit - um per tick^2
+typedef int Speed_t; // one unit - um per hr tick
+typedef int Acceleration_t; // one unit - um per hr tick^2
 
 typedef intptr_t WayPointId_t;
 typedef intptr_t PathId_t;
@@ -28,6 +28,16 @@ extern HRTime_t s_hr_time_min;
 inline int TicksPerSecond()
 {
     return 2;
+}
+
+inline int HRTicksPerSecond()
+{
+    return 2048;
+}
+
+inline HRTicksPerTick()
+{
+    return 1024;
 }
 
 inline Distance_t DistanceFromMm( int mm )

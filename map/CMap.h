@@ -93,19 +93,12 @@ public:
         assert( m_vehs.count(veh_id) == 0 );
         CVehicle* veh = ToVehicle(veh_id);
 
+        PathId_t current_path = veh->GetCurrentPath();
+
         std::vector<PathId_t> new_route;
-        veh->GetMinimalRoute(new_route);
-        assert( !new_route.empty() );
-
-        
+        if( !CalculateRoute( ToPath( current_path )->end_wp, wp, new_route ) )
         {
-            std::vector<PathId_t> calc_res;
-            if( !CalculateRoute( ToPath( new_route.back() )->end_wp, wp, calc_res ) )
-            {
-                return false;
-            }
-
-            new_route.insert( new_route.end(), calc_res.begin(), calc_res.end() );
+            return false;
         }
 
         veh->ReplaceRoute( std::move(new_route) );
