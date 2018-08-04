@@ -4,17 +4,16 @@ CJunction::CJunction( PathId_t hi_path_, Distance_t hi_path_begin, Distance_t hi
                         PathId_t lo_path_, Distance_t lo_path_begin, Distance_t lo_path_end )
     :   hi_path(hi_path_),
         lo_path(lo_path_),
-        next_lock_time(s_hr_time_max),
-        next_request_time(s_hr_time_min)
+        m_hi_lock_time(s_hr_time_max)
 {
-    HiPath()->AddJunctionData( CPath::SJunctionData( JunctionId(), lo_path, hi_path_begin, hi_path_end, true ) );
-    LoPath()->AddJunctionData( CPath::SJunctionData( JunctionId(), hi_path, lo_path_begin, lo_path_end, false ) );
+    HiPath()->AddJunction( JunctionId(), hi_path_begin, hi_path_end ) );
+    LoPath()->AddJunction( JunctionId(), lo_path_begin, lo_path_end ) );
 }
 
 CJunction::~CJunction()
 {
-    HiPath()->RemoveJunctionData( JunctionId() );
-    LoPath()->RemoveJunctionData( JunctionId() );
+    HiPath()->RemoveJunction( JunctionId() );
+    LoPath()->RemoveJunction( JunctionId() );
 }
 
 JunctionId_t CJunction::JunctionId() const
@@ -32,23 +31,29 @@ CPath* CJunction::LoPath() const
     return ToPath(lo_path);
 }
 
-void CJunction::UpdateNextLockTime()
+void CJunction::Lock( PathId_t path, HRTime_t time )
 {
-    next_lock_time = s_hr_time_max;
-
-    for( const auto& it: locks )
+    assert( path == hi_path || path == lo_path );
+    if( path == hi_path )
     {
-        next_lock_time = std::min( next_lock_time, it.second.time );
+        m_hi_lock_time = time;
     }
 }
 
-void CJunction::UpdateNextRequestTime()
+void CJunction::Unlock( PathId_t path )
 {
-    next_request_time = s_hr_time_min;
-
-    for( const auto& it: requests )
-    {
-        next_request_time = std::max( next_request_time, it.second.time );
-    }
+    assert( path == hi_path || path == lo_path );
+    this->Lock( path, s_hr_time_max );
 }
 
+bool CJunction::IsStopAvailable( PathId_t path ) const
+{
+    assert( path == hi_path || path == lo_path );
+    return path == hi_path;
+}
+
+bool CJunction::IsOutrunAvailable( PathId_t path, HRTime_t leave_before_time ) const
+{
+    assert( path == hi_path || path == lo_path );
+    return ( path == hi_path ) || ( leave_before_time <= m_hi_lock_time );
+}

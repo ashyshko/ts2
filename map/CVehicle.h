@@ -23,24 +23,6 @@ public:
     Speed_t speed;
     Acceleration_t accel;
 
-    enum ESegmentState
-    {
-        SegmentState_None,
-        SegmentState_Locked,
-        SegmentState_MoveThrough,
-        SegmentStateCount
-    };
-
-    struct SSegmentData
-    {
-        PathId_t path;
-        size_t segment_index;
-        ESegmentState state;
-        HRTime_t time;
-
-
-    };
-
     explicit CVehicle( EVehicleClass veh_class_, PathId_t path, Distance_t path_pos );
     ~CVehicle();
     
@@ -48,9 +30,6 @@ public:
     
     void GetMinimalRoute( std::vector<PathId_t>& min_route ) const;
     void ReplaceRoute( std::vector<PathId_t>&& new_route );
-    
-    void LockWasCanceled( PathId_t path, size_t segment_index );
-    void MoveThroughWasCanceled( PathId_t path, size_t segment_index );
 };
 
 inline VehicleId_t ToVehicleId( const CVehicle* veh )

@@ -16,18 +16,6 @@ public:
 
     Distance_t distance;
 
-    struct SJunctionData
-    {
-        JunctionId_t junc;
-        PathId_t other_path;
-        Distance_t pos_begin;
-        Distance_t pos_end;
-        bool high_priority;
-
-        SJunctionData( JunctionId_t junc_, PathId_t other_path_, 
-                        Distance_t pos_begin_, Distance_t pos_end_, bool high_priority_ );
-    };
-
     std::vector<SJunctionData> juncs;
 
     CPath( WayPointId_t begin_wp_, WayPointId_t end_wp_, Distance_t distance_ );
@@ -39,8 +27,8 @@ public:
     CWayPoint* BeginWayPoint() const;
     CWayPoint* EndWayPoint() const;
 
-    void AddJunctionData( const SJunctionData& junc_data );
-    void RemoveJunctionData( JunctionId_t junc );
+    void AddJunction( JunctionId_t junc, Distance_t pos_begin, Distance_t pos_end );
+    void RemoveJunction( JunctionId_t junc );
 
     size_t SegmentCount() const;
     Distance_t SegmentStart( size_t index ) const;
@@ -57,33 +45,40 @@ public:
     bool IsStopAvailable( size_t segment_index ) const;
     bool IsOutrunAvailable( size_t segment_index, HRTime_t leave_before_time ) const;
 
-
-    void LockWasCanceled( JunctionId_t junc, VehicleId_t veh );
-    void MoveThroughWasCanceled( JunctionId_t junc, VehicleId_t veh );
-
 private:
+    struct SLock
+    {
+        size_t segment_index;
+        VehicleId_t veh;
+        HRTime_t min_time;
+
+        explicit SLock( size_t segment_index_, VehicleId_t veh_, HRTime_t min_time_ )
+            :   segment_index(segment_index_),
+                veh(veh_),
+                min_time(min_time_)
+        {    
+        }
+    };
+
     struct SSegment
     {
         Distance_t begin;
-        JunctionId_t junc;
-        PathId_t junc_other_path;
-        bool junc_hi_priority;
+        Distance_t end;
+        std::set<JunctionId_t> juncs;
+        std::set<LockId_t> locks;
 
-        explicit SSegment( Distance_t begin_,
-                            JunctionId_t junc_ = s_invalid_junc_id, PathId_t junc_other_path_ = s_invalid_path_id,
-                            bool junc_hi_priority_ = true )
+        explicit SSegment( Distance_t begin_, Distance_t end_ )
             :   begin(begin_),
-                junc(junc_),
-                junc_other_path(junc_other_path_),
-                junc_hi_priority(junc_hi_priority_)
+                end(end_)
         {
         }
     };
 
-    std::vector<SSegment> m_segments;
-    std::map<VehicleId_t, size_t> m_veh_segments;
+    void UpdateSegmentLock( size_t segment_index );
 
-    size_t JunctionIdToSegmentIndex( JunctionId_t junc ) const;
+    std::vector<SSegment> m_segments;
+
+    size_t PositionToSegmentIndex( Distance_t pos ) const;
 
 };
 
