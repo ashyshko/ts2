@@ -53,6 +53,11 @@ inline Point_t PointFromMm( int mm )
     return mm;
 }
 
+inline Point_t PointFromM( int m )
+{
+    return PointFromMm( m * 1000 );
+}
+
 inline Distance_t DistanceFromPoint( Point_t pt )
 {
     return pt * 1000;
