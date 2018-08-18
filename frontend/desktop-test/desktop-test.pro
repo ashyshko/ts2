@@ -11,6 +11,9 @@ INCLUDEPATH += ../../backend/tl
 
 SOURCES += main.cpp
 
+HEADERS += QMapWidget.h
+SOURCES += QMapWidget.cpp
+
 HEADERS += ../../backend/hub/Defs.h
 SOURCES += ../../backend/hub/Defs.cpp
 
@@ -27,6 +30,7 @@ SOURCES += ../../backend/hub/CWayPoint.cpp
 
 HEADERS += ../../backend/tl/CMap.h
 SOURCES += ../../backend/tl/CMap.cpp
+
 
 
 

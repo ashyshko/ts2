@@ -7,6 +7,9 @@ class CMap
 public:
     explicit CMap( Point_t width, Point_t height );
 
+    Point_t Width() const { return m_width; }
+    Point_t Height() const { return m_height; }
+
     static Point_t const s_lane_width;
     static Point_t const s_cross_size;
 

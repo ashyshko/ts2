@@ -1,9 +1,10 @@
 #include <CMap.h>
+#include <cmath>
 
 //=====================================================================================================================
 bool CMap::SRect::IsValid() const
 {
-    return x2 <= x1 && y2 <= y1;
+    return x2 >= x1 && y2 >= y1;
 }
 
 /*static*/ CMap::SRect CMap::SRect::FromLTRB( Point_t x1_, Point_t y1_, Point_t x2_, Point_t y2_ )
@@ -19,7 +20,7 @@ bool CMap::SRect::IsValid() const
 bool CMap::SRect::Intersects( const SRect& other, SRect& intersect ) const
 {
     assert( IsValid() && other.IsValid() );
-    intersect = FromLTRB( std::max( x1, other.x2 ), std::max( y1, other.y1 ), std::min( x2, other.x2 ), std::min( y2, other.y2 ) );
+    intersect = FromLTRB( std::max( x1, other.x1 ), std::max( y1, other.y1 ), std::min( x2, other.x2 ), std::min( y2, other.y2 ) );
     return intersect.IsValid();
 }
 
@@ -306,13 +307,19 @@ bool CMap::AddRoad( Point_t x, Point_t y, Point_t length, EDirection direction, 
             {
                 cross_begin = new_cross_rects[new_cross_index].first.x1;
                 cross_end = new_cross_rects[new_cross_index].first.x2;
-                SplitRoad0( new_cross_rects[new_cross_index].second, current_cross, bound_rect.y1, bound_rect.y2 );
+                if( new_cross_rects[new_cross_index].second != nullptr )
+                {
+                   SplitRoad0( new_cross_rects[new_cross_index].second, current_cross, bound_rect.y1, bound_rect.y2 );
+                }
             }
             else
             {
                 cross_begin = new_cross_rects[new_cross_index].first.y1;
                 cross_end = new_cross_rects[new_cross_index].first.y2;
-                SplitRoad0( new_cross_rects[new_cross_index].second, current_cross, bound_rect.x1, bound_rect.x2 );
+                if( new_cross_rects[new_cross_index].second != nullptr )
+                {
+                    SplitRoad0( new_cross_rects[new_cross_index].second, current_cross, bound_rect.x1, bound_rect.x2 );
+                }
             }
 
             ++new_cross_index;

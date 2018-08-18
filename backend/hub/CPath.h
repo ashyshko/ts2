@@ -134,6 +134,9 @@ private:
         }
     };
 
+    CPath( const CPath& ) = delete;
+    CPath& operator=( const CPath& ) = delete;
+
     void UpdateSegmentLock( size_t segment_index );
 
     std::vector<SSegment> m_segments;
