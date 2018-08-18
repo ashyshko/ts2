@@ -45,6 +45,16 @@ inline Distance_t DistanceFromMm( int mm )
     return mm * 1000;
 }
 
+inline Point_t PointFromMm( int mm )
+{
+    return mm;
+}
+
+inline Distance_t DistanceFromPoint( Point_t pt )
+{
+    return pt * 1000;
+}
+
 inline Speed_t FromKmphF( double kmph )
 {
     double mmps = kmph * 1000 / 3.6;
