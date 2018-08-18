@@ -15,6 +15,9 @@ typedef intptr_t PathId_t;
 typedef intptr_t JunctionId_t;
 typedef intptr_t VehicleId_t;
 
+extern Point_t s_point_max;
+extern Point_t s_point_min;
+
 extern WayPointId_t s_invalid_wp_id;
 extern PathId_t s_invalid_path_id;
 extern JunctionId_t s_invalid_junc_id;

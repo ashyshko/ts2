@@ -7,8 +7,8 @@ class CMap
 public:
     explicit CMap( Point_t width, Point_t height );
 
-    static Point_t s_lane_width = PointFromMm(3000);
-    static Point_t s_cross_size = PointFromMm(3000);
+    static Point_t const s_lane_width;
+    static Point_t const s_cross_size;
 
     enum EDirection
     {
@@ -43,8 +43,8 @@ public:
         bool straight;
         SRect rect;
         int from_x, from_y, to_x, to_y;
-        WayPoint_t in;
-        WayPoint_t out;
+        WayPointId_t in;
+        WayPointId_t out;
         PathId_t path;
     };
 
@@ -128,7 +128,7 @@ private:
                 S0  S1  O0  O1
     */
 
-    SConnection* UpdateCrossConnection0( SCross* cross, SLane* lane_in, SLane* lane_out, SCross::EConnectionType type );
+    SConnection* UpdateCrossConnection0( SCross* cross, SLane* lane_in, SLane* lane_out, EConnectionType type );
     void UpdateCrossTurns0( SCross* cross );
     std::set<SConnection*> UpdateCrossTurns0( SCross* cross, SRoad* road, bool straight, bool left0,
                             SRoad* road_left, bool left_straight,

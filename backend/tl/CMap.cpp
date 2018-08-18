@@ -19,7 +19,7 @@ bool CMap::SRect::IsValid() const
 bool CMap::SRect::Intersects( const SRect& other, SRect& intersect ) const
 {
     assert( IsValid() && other.IsValid() );
-    intersect = FromLTBR( std::max( x1, other.x2 ), std::max( y1, other.y1 ), std::min( x2, other.x2 ), std::min( y2, other.y2 ) );
+    intersect = FromLTRB( std::max( x1, other.x2 ), std::max( y1, other.y1 ), std::min( x2, other.x2 ), std::min( y2, other.y2 ) );
     return intersect.IsValid();
 }
 
@@ -67,7 +67,7 @@ Point_t CMap::SRoad::TotalLengthWidth() const
 
 /*static*/ CMap::SRect CMap::SRoad::BoundRectForCross( Point_t x, Point_t y, Point_t length, size_t total_lanes, bool horizontal )
 {
-    return BoundRect( x, y, length, this->LaneCount(), horizontal, s_cross_size );            
+    return BoundRect( x, y, length, total_lanes, horizontal, s_cross_size );
 }
 
 CMap::SRect CMap::SRoad::BoundRect() const
@@ -140,6 +140,9 @@ CMap::SRect CMap::SCross::BoundRect() const
 
 
 //=====================================================================================================================
+/*static*/ Point_t const CMap::s_lane_width = PointFromMm(3000);
+/*static*/ Point_t const CMap::s_cross_size = PointFromMm(3000);
+
 CMap::CMap( Point_t width, Point_t height )
     :   m_width(width),
         m_height(height)
@@ -155,7 +158,7 @@ bool CMap::AddRoad( Point_t x, Point_t y, Point_t length, EDirection direction, 
     case Direction_Left:
         return AddRoad( x + length, y, length, Direction_Right, opposite_lane_count, straight_lane_count );
     case Direction_Top:
-        return AddRoad( x, y + length, Direction_Bottom, opposite_lane_count, straight_lane_count );
+        return AddRoad( x, y + length, length, Direction_Bottom, opposite_lane_count, straight_lane_count );
     }
 
     assert( direction == Direction_Right || direction == Direction_Bottom );
@@ -185,8 +188,8 @@ bool CMap::AddRoad( Point_t x, Point_t y, Point_t length, EDirection direction, 
     }
     else
     {
-        new_cross_rects.push_back( std::make_pair( SRoad::BoundRectForCross( x, y, 0, total_lanes, horizontal ) ), nullptr );
-        new_cross_rects.push_back( std::make_pair( SRoad::BoundRectForCross( x, y+length, 0, total_lanes, horizontal ) ), nullptr );            
+        new_cross_rects.push_back( std::make_pair( SRoad::BoundRectForCross( x, y, 0, total_lanes, horizontal ), nullptr ) );
+        new_cross_rects.push_back( std::make_pair( SRoad::BoundRectForCross( x, y+length, 0, total_lanes, horizontal ), nullptr ) );
     }
 
     std::vector<SCross*> existing_crosses;
@@ -237,7 +240,7 @@ bool CMap::AddRoad( Point_t x, Point_t y, Point_t length, EDirection direction, 
         } );
     
     std::sort( new_cross_rects.begin(), new_cross_rects.end(),
-        [horizontal]( const std::pair<SRect,SRoad*>& l, const td::pair<SRect,SRoad*>& r )
+        [horizontal]( const std::pair<SRect,SRoad*>& l, const std::pair<SRect,SRoad*>& r )
         {
             if(horizontal)
             {
@@ -262,7 +265,7 @@ bool CMap::AddRoad( Point_t x, Point_t y, Point_t length, EDirection direction, 
 
         if( existing_cross_index < existing_crosses.size() )
         {
-            existing_pos = horizontal ? existing_crosses[existing_cross_index].BoundRect().x1 : existing_crosses[existing_cross_index].BoundRect().y1;
+            existing_pos = horizontal ? existing_crosses[existing_cross_index]->BoundRect().x1 : existing_crosses[existing_cross_index]->BoundRect().y1;
         }
 
         if( new_cross_index < new_cross_rects.size() )
@@ -283,13 +286,13 @@ bool CMap::AddRoad( Point_t x, Point_t y, Point_t length, EDirection direction, 
 
             if(horizontal)
             {
-                cross_begin = current_cross.BoundRect().x1;
-                cross_end = current_cross.BoundRect().x2;
+                cross_begin = current_cross->BoundRect().x1;
+                cross_end = current_cross->BoundRect().x2;
             }
             else
             {
-                cross_begin = current_cross.BoundRect().y1;
-                cross_end = current_cross.BoundRect().y2;
+                cross_begin = current_cross->BoundRect().y1;
+                cross_end = current_cross->BoundRect().y2;
             }
 
             ++existing_cross_index;
@@ -422,19 +425,19 @@ void CMap::RemoveRoad0( SRoad* road )
 
     if( cross_in != nullptr )
     {
-        if(horizontal)
+        if(road->horizontal)
         {
             assert( cross_in->road_right == road );
-            UpdateCrossRight0(cross_in);
+            UpdateCrossRight0( cross_in, nullptr );
             assert( cross_out->road_left == road );
-            UpdateCrossLeft0(cross_out);
+            UpdateCrossLeft0( cross_out, nullptr );
         }
         else
         {
             assert( cross_in->road_bottom == road );
-            UpdateCrossBottom0(cross_in);
+            UpdateCrossBottom0( cross_in, nullptr );
             assert( cross_out->road_top == road );
-            UpdateCrossTop0(cross_out);
+            UpdateCrossTop0( cross_out, nullptr );
         }
     }
 
@@ -454,16 +457,16 @@ void CMap::RemoveRoad0( SRoad* road )
 
 void CMap::RegisterLane0( SLane* lane )
 {
-    lane->in = m_hub->AddWayPoint();
-    lane->out = m_hub->AddWayPoint();
-    lane->path = m_hub->AddPath( lane->in, lane->out, DistanceFromPoint( lane->road->length ) );
+    lane->in = m_hub.AddWayPoint();
+    lane->out = m_hub.AddWayPoint();
+    lane->path = m_hub.AddPath( lane->in, lane->out, DistanceFromPoint( lane->road->length ) );
 }
 
 void CMap::UnregisterLane0( SLane* lane )
 {
-    m_hub->RemovePath(lane->path);
-    m_hub->RemoveWayPoint(lane->in);
-    m_hub->RemoveWayPoint(lane->out);
+    m_hub.RemovePath(lane->path);
+    m_hub.RemoveWayPoint(lane->in);
+    m_hub.RemoveWayPoint(lane->out);
 }
 
 void CMap::SplitRoad0( SRoad* road, SCross* cross, Point_t p1, Point_t p2 )
@@ -473,8 +476,8 @@ void CMap::SplitRoad0( SRoad* road, SCross* cross, Point_t p1, Point_t p2 )
     Point_t length = road->length;
     SCross* cross_in = road->cross_in;
     SCross* cross_out = road->cross_out;
-    size_t straight_lane_count = road->straight_lane_count;
-    size_t opposite_lane_count = road->opposite_lane_count;
+    size_t straight_lane_count = road->straight_lanes.size();
+    size_t opposite_lane_count = road->opposite_lanes.size();
     bool horizontal = road->horizontal;
     RemoveRoad0(road);
 
@@ -495,13 +498,15 @@ std::set<CMap::SConnection*>::iterator CMap::RemoveCrossConnection0( SCross* cro
     for( const std::pair<SConnection*, JunctionId_t>& junc: connection->juncs )
     {
         assert( junc.first->juncs.count(connection) == 1 );
-        m_hub->RemoveJunction(junc.second);
+        m_hub.RemoveJunction(junc.second);
         junc.first->juncs.erase(connection);
     }
 
     connection->juncs.clear();
     delete connection;
-    return cross->connections.erase(connection);
+    auto connection_it = cross->connections.find(connection);
+    assert( connection_it != cross->connections.end() );
+    return cross->connections.erase(connection_it);
 }
 
 /*
@@ -540,7 +545,7 @@ CMap::SConnection* CMap::UpdateCrossConnection0( SCross* cross, SLane* lane_in, 
     SConnection* con = new SConnection;
     con->in = lane_in;
     con->out = lane_out;
-    con->path = m_hub->AddPath( lane_in->out, lane_out->in, DistanceFromPoint(distance) );
+    con->path = m_hub.AddPath( lane_in->out, lane_out->in, DistanceFromPoint(distance) );
     con->type = type;
     cross->connections.insert(con);
     return con;
@@ -557,7 +562,7 @@ void CMap::UpdateCrossTurns0( SCross* cross )
     }
     
     {
-        std::set<SConnection*> local = his->UpdateCrossTurns0( cross, cross->road_top, true, false, 
+        std::set<SConnection*> local = this->UpdateCrossTurns0( cross, cross->road_top, true, false,
             cross->road_right, true, cross->road_bottom, cross->road_left, false );
         connections.insert( local.begin(), local.end() );
     }
@@ -574,7 +579,7 @@ void CMap::UpdateCrossTurns0( SCross* cross )
         connections.insert( local.begin(), local.end() );
     }
 
-    for( auto it = cross->connections.begin(); it != cross->connections.end() )
+    for( auto it = cross->connections.begin(); it != cross->connections.end(); )
     {
         if( connections.count(*it) != 0 )
         {
@@ -608,7 +613,7 @@ std::set<CMap::SConnection*> CMap::UpdateCrossTurns0( SCross* cross, SRoad* road
         // u turn
         if( can_turn_left )
         {
-            std::vector<SLane*>& turn_lanes = !straight ? road->straight_lines : road->opposite_lanes;
+            std::vector<SLane*>& turn_lanes = !straight ? road->straight_lanes : road->opposite_lanes;
             
             if( !turn_lanes.empty() )
             {
@@ -619,7 +624,7 @@ std::set<CMap::SConnection*> CMap::UpdateCrossTurns0( SCross* cross, SRoad* road
 
         if( can_turn_left && road_left != nullptr )
         {
-            std::vector<SLane*>& turn_lanes = left_straight ? road_left->straight_lines : road_left->opposite_lanes;
+            std::vector<SLane*>& turn_lanes = left_straight ? road_left->straight_lanes : road_left->opposite_lanes;
             
             if( !turn_lanes.empty() )
             {
@@ -639,7 +644,7 @@ std::set<CMap::SConnection*> CMap::UpdateCrossTurns0( SCross* cross, SRoad* road
 
         if( road_straight != nullptr )
         {
-            std::vector<SLane*>& other_lanes = straight ? road_straight->straight_lines : road_straight->opposite_lanes;
+            std::vector<SLane*>& other_lanes = straight ? road_straight->straight_lanes : road_straight->opposite_lanes;
             
             if( i < other_lanes.size() )
             {
@@ -649,7 +654,7 @@ std::set<CMap::SConnection*> CMap::UpdateCrossTurns0( SCross* cross, SRoad* road
 
         if( can_turn_right && road_right != nullptr )
         {
-            std::vector<SLane*>& turn_lanes = right_straight ? road_right->straight_lines : road_right->opposite_lanes;
+            std::vector<SLane*>& turn_lanes = right_straight ? road_right->straight_lanes : road_right->opposite_lanes;
             
             if( !turn_lanes.empty() )
             {
