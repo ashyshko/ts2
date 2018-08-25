@@ -22,7 +22,7 @@ CPath::CPath( WayPointId_t begin_wp_, WayPointId_t end_wp_, Distance_t distance_
 CPath::~CPath()
 {
     assert( EndWayPoint()->pathes_in.count( PathId() ) == 1 );
-    assert( BeginWayPoint()->pathes_out.count( PathId() == 1 ) );
+    assert( BeginWayPoint()->pathes_out.count( PathId() ) == 1 );
     EndWayPoint()->pathes_in.erase( PathId() );
     BeginWayPoint()->pathes_out.erase( PathId() );
 

@@ -63,6 +63,8 @@ public:
         SCross* cross_in;
         SCross* cross_out;
 
+        SRoad() : cross_in(nullptr), cross_out(nullptr) {}
+
         size_t LaneCount() const;
 
         static Point_t TotalLanesWidth( size_t lane_count );
@@ -110,11 +112,15 @@ public:
     const std::set<SCross*>& Crosses() const { return m_crosses; }
 
 private:
+    void RegisterRoad0( SRoad* road, Point_t x, Point_t y, Point_t length, bool horizontal, size_t straight_lane_count, size_t opposite_lane_count, SCross* cross_in, SCross* cross_out );
+    void UnregisterRoad0( SRoad* road );
     SRoad* AddRoad0( Point_t x, Point_t y, Point_t length, bool horizontal, size_t straight_lane_count, size_t opposite_lane_count, SCross* cross_in, SCross* cross_out );
     void RemoveRoad0( SRoad* road );
     void RegisterLane0( SLane* lane );
     void UnregisterLane0( SLane* lane );
     void SplitRoad0( SRoad* road, SCross* cross, Point_t p1, Point_t p2 );
+    void UpdateRoadPos0( SRoad* road, Point_t p1, Point_t p2 );
+    void UpdateCrossBoundRect0( SCross* cross );
     std::set<SConnection*>::iterator RemoveCrossConnection0( SCross* cross, SConnection* connection );
 
     /*

@@ -20,6 +20,7 @@ private:
     static int const s_border_px = 10;
     CMap* m_map;
     double m_points_per_px;
+    double m_current_pinch_zoom;
     double m_default_points_per_px;
     Point_t m_center_x;
     Point_t m_center_y;
@@ -28,6 +29,8 @@ private:
 protected:
     virtual void paintEvent(QPaintEvent *event) override;
     virtual void keyPressEvent(QKeyEvent *event) override;
+    virtual void wheelEvent(QWheelEvent *event) override;
+    virtual bool event(QEvent *event) override;
 };
 
 #endif // QMAPWIDGET_H

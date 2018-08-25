@@ -1,11 +1,14 @@
 #include "QMapWidget.h"
 
+#include <cmath>
+#include <QGestureEvent>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QDebug>
 
-QMapWidget::QMapWidget(QWidget *parent) : QWidget(parent), m_map(nullptr)
+QMapWidget::QMapWidget(QWidget *parent) : QWidget(parent), m_map(nullptr), m_current_pinch_zoom(1.0)
 {
-
+    this->grabGesture( Qt::PinchGesture );
 }
 
 void QMapWidget::SetMap( CMap* map )
@@ -42,10 +45,11 @@ void QMapWidget::paintEvent(QPaintEvent *event)
     }
 
     QPainter p(this);
-    p.scale( 1.0 / m_points_per_px, 1.0 / m_points_per_px );
+    double zoom = m_points_per_px / m_current_pinch_zoom;
+    p.scale( 1.0 / zoom, 1.0 / zoom );
     {
-        int left = m_center_x - width() / 2 * m_points_per_px;
-        int top = m_center_y - height() / 2 * m_points_per_px;
+        int left = m_center_x - width() / 2 * zoom;
+        int top = m_center_y - height() / 2 * zoom;
         p.translate( -left, -top );
     }
 
@@ -53,8 +57,6 @@ void QMapWidget::paintEvent(QPaintEvent *event)
 
     p.setPen( QPen( Qt::red, 10000.0 ) );
     p.drawRect( QRect( 0, 0, m_map->Width(), m_map->Height() ) );
-
-    p.setRenderHint( QPainter::HighQualityAntialiasing );
 
     p.setPen( QPen( Qt::black, 100 ) );
 
@@ -66,7 +68,38 @@ void QMapWidget::paintEvent(QPaintEvent *event)
             r.setCoords( lane->rect.x1, lane->rect.y1, lane->rect.x2, lane->rect.y2 );
             p.drawRect( r );
         }
+
+        for( const CMap::SLane* lane: road->opposite_lanes )
+        {
+            QRect r;
+            r.setCoords( lane->rect.x1, lane->rect.y1, lane->rect.x2, lane->rect.y2 );
+            p.drawRect( r );
+        }
     }
+
+    p.setPen( QPen( Qt::blue, 50, Qt::DotLine ) );
+
+    for( const CMap::SRoad* road: m_map->Roads() )
+    {
+        for( const CMap::SLane* lane: road->straight_lanes )
+        {
+            p.drawLine( lane->from_x, lane->from_y, lane->to_x, lane->to_y );
+        }
+
+        for( const CMap::SLane* lane: road->opposite_lanes )
+        {
+            p.drawLine( lane->from_x, lane->from_y, lane->to_x, lane->to_y );
+        }
+    }
+
+    for( const CMap::SCross* cross: m_map->Crosses() )
+    {
+        for( const CMap::SConnection* con: cross->connections )
+        {
+            p.drawLine( con->in->to_x, con->in->to_y, con->out->from_x, con->out->from_y );
+        }
+    }
+
 }
 
 
@@ -90,24 +123,65 @@ void QMapWidget::keyPressEvent(QKeyEvent *event)
         break;
     case Qt::Key_A:
     case Qt::Key_Left:
-        m_center_x += s_movement_px * m_points_per_px;
+        m_center_x -= s_movement_px * m_points_per_px;
         this->update();
         break;
     case Qt::Key_D:
     case Qt::Key_Right:
-        m_center_x -= s_movement_px * m_points_per_px;
+        m_center_x += s_movement_px * m_points_per_px;
         this->update();
         break;
     case Qt::Key_W:
     case Qt::Key_Up:
-        m_center_y += s_movement_px * m_points_per_px;
+        m_center_y -= s_movement_px * m_points_per_px;
         this->update();
         break;
     case Qt::Key_S:
     case Qt::Key_Down:
-        m_center_y -= s_movement_px * m_points_per_px;
+        m_center_y += s_movement_px * m_points_per_px;
         this->update();
         break;
 
     }
+}
+
+
+void QMapWidget::wheelEvent(QWheelEvent *event)
+{
+    event->accept();
+
+    if( !event->pixelDelta().isNull() )
+    {
+        m_center_x -= event->pixelDelta().x() * m_points_per_px;
+        m_center_y -= event->pixelDelta().y() * m_points_per_px;
+        this->update();
+        return;
+    }
+}
+
+
+bool QMapWidget::event(QEvent *event)
+{
+    if( event->type() == QEvent::Gesture )
+    {
+        QGestureEvent* gesture_ev = static_cast<QGestureEvent*>(event);
+        if( QPinchGesture* g = static_cast<QPinchGesture*>( gesture_ev->gesture(Qt::PinchGesture) ) )
+        {
+            if( g->changeFlags() & QPinchGesture::ScaleFactorChanged )
+            {
+                m_current_pinch_zoom = g->totalScaleFactor();
+                this->update();
+            }
+            if( g->state() == Qt::GestureFinished )
+            {
+                m_points_per_px /= m_current_pinch_zoom;
+                m_current_pinch_zoom = 1.0;
+                this->update();
+            }
+        }
+
+        return true;
+    }
+
+    return QWidget::event(event);
 }
